@@ -49,8 +49,6 @@ This project exemplifies a powerful synergy between human vision and AI capabili
     *   [CUDA out of memory error](#cuda-out-of-memory-error)
 *   [Additional Information](#additional-information)
 *   [Known Issues & Future Improvements](#known-issues--future-improvements)
-*   [Contributions](#contributions)
-*   [License](#license)
 
 ## Features
 
