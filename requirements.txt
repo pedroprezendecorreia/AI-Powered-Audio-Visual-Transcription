@@ -1,0 +1,10 @@
+PySide6
+openai-whisper
+yt-dlp
+torch
+torchvision
+torchaudio
+pywin32; platform_system == "Windows"
+winshell; platform_system == "Windows"
+
+
