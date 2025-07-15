@@ -1,5 +1,5 @@
 """
-Componente de barra de progresso e status para o aplicativo de transcrição.
+Progress bar and status component for the transcription application.
 """
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QPushButton,
@@ -10,19 +10,19 @@ from PySide6.QtGui import QFont
 
 class ProgressBar(QWidget):
     """
-    Widget para exibir progresso e status das operações.
+    Widget to display progress and status of operations.
     """
-    # Sinais
+    # Signals
     cancel_requested = Signal()
     
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        # Layout principal
+        # Main layout
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         
-        # Barra de progresso principal
+        # Main progress bar
         self.progress_layout = QHBoxLayout()
         
         self.progress_bar = QProgressBar()
@@ -30,57 +30,57 @@ class ProgressBar(QWidget):
         self.progress_bar.setValue(0)
         self.progress_layout.addWidget(self.progress_bar, 1)
         
-        self.cancel_button = QPushButton("Cancelar")
+        self.cancel_button = QPushButton("Cancel")
         self.cancel_button.clicked.connect(self.on_cancel_clicked)
         self.cancel_button.setEnabled(False)
         self.progress_layout.addWidget(self.cancel_button)
         
         self.layout.addLayout(self.progress_layout)
         
-        # Status principal
-        self.status_label = QLabel("Pronto")
+        # Main status
+        self.status_label = QLabel("Ready")
         self.status_label.setAlignment(Qt.AlignLeft)
         font = QFont()
         font.setBold(True)
         self.status_label.setFont(font)
         self.layout.addWidget(self.status_label)
         
-        # Separador
+        # Separator
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
         separator.setFrameShadow(QFrame.Sunken)
         self.layout.addWidget(separator)
         
-        # Status detalhado
+        # Detailed status
         self.detailed_status_label = QLabel("")
         self.detailed_status_label.setAlignment(Qt.AlignLeft)
         self.detailed_status_label.setWordWrap(True)
         self.layout.addWidget(self.detailed_status_label)
         
-        # Indicador de atividade
+        # Activity indicator
         self.activity_indicator = QLabel("⏳")
         self.activity_indicator.setAlignment(Qt.AlignRight)
         self.activity_indicator.setVisible(False)
         self.layout.addWidget(self.activity_indicator)
         
-        # Timer para animação do indicador de atividade
+        # Timer for activity indicator animation
         self.animation_counter = 0
         self.animation_symbols = ["⏳", "⌛", "⏳", "⌛"]
     
     def set_progress(self, value, detailed_status=None):
         """
-        Define o valor da barra de progresso.
+        Sets the progress bar value.
         
         Args:
-            value (int): Valor de progresso (0-100)
-            detailed_status (str, optional): Status detalhado
+            value (int): Progress value (0-100)
+            detailed_status (str, optional): Detailed status
         """
         self.progress_bar.setValue(value)
         
         if detailed_status:
             self.detailed_status_label.setText(detailed_status)
             
-        # Atualizar indicador de atividade
+        # Update activity indicator
         if value > 0 and value < 100:
             self.activity_indicator.setVisible(True)
             self.animation_counter = (self.animation_counter + 1) % len(self.animation_symbols)
@@ -90,32 +90,34 @@ class ProgressBar(QWidget):
     
     def set_status(self, text):
         """
-        Define o texto de status.
+        Sets the status text.
         
         Args:
-            text (str): Texto de status
+            text (str): Status text
         """
         self.status_label.setText(text)
     
     def start_operation(self):
         """
-        Inicia uma operação, habilitando o botão de cancelar.
+        Starts an operation, enabling the cancel button.
         """
         self.cancel_button.setEnabled(True)
         self.activity_indicator.setVisible(True)
     
     def finish_operation(self):
         """
-        Finaliza uma operação, desabilitando o botão de cancelar.
+        Finishes an operation, disabling the cancel button.
         """
         self.cancel_button.setEnabled(False)
         self.progress_bar.setValue(0)
-        self.status_label.setText("Pronto")
+        self.status_label.setText("Ready")
         self.detailed_status_label.setText("")
         self.activity_indicator.setVisible(False)
     
     def on_cancel_clicked(self):
         """
-        Manipulador para o clique no botão de cancelar.
+        Handler for the cancel button click.
         """
         self.cancel_requested.emit()
+
+

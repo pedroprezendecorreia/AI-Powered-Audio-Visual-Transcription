@@ -1,5 +1,5 @@
 """
-Componente de configuração de transcrição para o aplicativo de transcrição.
+Transcription configuration component for the transcription application.
 """
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
@@ -9,31 +9,31 @@ from PySide6.QtCore import Qt, Signal
 
 class TranscriptionConfig(QWidget):
     """
-    Widget para configurações de transcrição (idioma, modelo, dispositivo).
+    Widget for transcription settings (language, model, device).
     """
-    # Sinais
+    # Signals
     config_changed = Signal(dict)
     
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        # Layout principal
+        # Main layout
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         
-        # Configuração de idioma
+        # Language configuration
         self.setup_language_section()
         
-        # Configuração de modelo
+        # Model configuration
         self.setup_model_section()
         
-        # Configuração de dispositivo
+        # Device configuration
         self.setup_device_section()
         
-        # Adicionar espaçador para empurrar tudo para cima
+        # Add spacer to push everything up
         self.layout.addStretch()
         
-        # Configuração inicial
+        # Initial configuration
         self.current_config = {
             'language': 'auto',
             'model': 'base',
@@ -42,81 +42,81 @@ class TranscriptionConfig(QWidget):
     
     def setup_language_section(self):
         """
-        Configura a seção de seleção de idioma.
+        Sets up the language selection section.
         """
-        language_group = QGroupBox("Idioma")
+        language_group = QGroupBox("Language")
         language_layout = QVBoxLayout(language_group)
         
-        # Descrição
-        language_desc = QLabel("Selecione o idioma do áudio ou escolha detecção automática:")
+        # Description
+        language_desc = QLabel("Select the audio language or choose automatic detection:")
         language_layout.addWidget(language_desc)
         
-        # Combobox de idiomas
+        # Language combobox
         self.language_combo = QComboBox()
-        self.language_combo.addItem("Detecção Automática", "auto")
-        self.language_combo.addItem("Português", "pt")
-        self.language_combo.addItem("Inglês", "en")
-        self.language_combo.addItem("Espanhol", "es")
-        self.language_combo.addItem("Francês", "fr")
-        self.language_combo.addItem("Alemão", "de")
-        self.language_combo.addItem("Italiano", "it")
-        self.language_combo.addItem("Japonês", "ja")
-        self.language_combo.addItem("Chinês", "zh")
-        self.language_combo.addItem("Russo", "ru")
-        self.language_combo.addItem("Árabe", "ar")
+        self.language_combo.addItem("Automatic Detection", "auto")
+        self.language_combo.addItem("Portuguese", "pt")
+        self.language_combo.addItem("English", "en")
+        self.language_combo.addItem("Spanish", "es")
+        self.language_combo.addItem("French", "fr")
+        self.language_combo.addItem("German", "de")
+        self.language_combo.addItem("Italian", "it")
+        self.language_combo.addItem("Japanese", "ja")
+        self.language_combo.addItem("Chinese", "zh")
+        self.language_combo.addItem("Russian", "ru")
+        self.language_combo.addItem("Arabic", "ar")
         
         self.language_combo.currentIndexChanged.connect(self.on_config_changed)
         language_layout.addWidget(self.language_combo)
         
-        # Adicionar ao layout principal
+        # Add to main layout
         self.layout.addWidget(language_group)
     
     def setup_model_section(self):
         """
-        Configura a seção de seleção de modelo.
+        Sets up the model selection section.
         """
-        model_group = QGroupBox("Modelo")
+        model_group = QGroupBox("Model")
         model_layout = QVBoxLayout(model_group)
         
-        # Descrição
-        model_desc = QLabel("Selecione o modelo Whisper a ser utilizado:")
+        # Description
+        model_desc = QLabel("Select the Whisper model to be used:")
         model_layout.addWidget(model_desc)
         
-        # Combobox de modelos
+        # Model combobox
         self.model_combo = QComboBox()
-        self.model_combo.addItem("Tiny (velocidade rápida, menor precisão)", "tiny")
-        self.model_combo.addItem("Base (equilíbrio entre velocidade e precisão)", "base")
-        self.model_combo.addItem("Small (boa precisão, velocidade moderada)", "small")
-        self.model_combo.addItem("Medium (alta precisão, velocidade lenta)", "medium")
-        self.model_combo.addItem("Large (máxima precisão, velocidade muito lenta)", "large")
+        self.model_combo.addItem("Tiny (fast speed, lower accuracy)", "tiny")
+        self.model_combo.addItem("Base (balance of speed and accuracy)", "base")
+        self.model_combo.addItem("Small (good accuracy, moderate speed)", "small")
+        self.model_combo.addItem("Medium (high accuracy, slow speed)", "medium")
+        self.model_combo.addItem("Large (maximum accuracy, very slow speed)", "large")
         
-        # Definir o modelo "base" como padrão (índice 1)
+        # Set "base" model as default (index 1)
         self.model_combo.setCurrentIndex(1)
         
         self.model_combo.currentIndexChanged.connect(self.on_config_changed)
         model_layout.addWidget(self.model_combo)
         
-        # Adicionar ao layout principal
+        # Add to main layout
         self.layout.addWidget(model_group)
     
     def setup_device_section(self):
         """
-        Configura a seção de seleção de dispositivo.
+        Sets up the device selection section.
         """
-        device_group = QGroupBox("Dispositivo de Processamento")
+        device_group = QGroupBox("Processing Device")
         device_layout = QVBoxLayout(device_group)
         
-        # Descrição
-        device_desc = QLabel("Selecione o dispositivo para processamento:")
+        # Description
+        device_desc = QLabel("Select the device for processing:")
         device_layout.addWidget(device_desc)
         
-        # Opções de dispositivo
+        # Device options
         self.device_button_group = QButtonGroup(self)
         
         device_layout_h = QHBoxLayout()
         
         self.cuda_radio = QRadioButton("GPU (CUDA)")
-        self.cuda_radio.setChecked(True)  # GPU como padrão
+        self.cuda_radio.setChecked(True)  # GPU as default
         self.device_button_group.addButton(self.cuda_radio)
         device_layout_h.addWidget(self.cuda_radio)
         
@@ -126,16 +126,16 @@ class TranscriptionConfig(QWidget):
         
         device_layout.addLayout(device_layout_h)
         
-        # Conectar sinais
+        # Connect signals
         self.cuda_radio.toggled.connect(self.on_config_changed)
         self.cpu_radio.toggled.connect(self.on_config_changed)
         
-        # Adicionar ao layout principal
+        # Add to main layout
         self.layout.addWidget(device_group)
     
     def on_config_changed(self):
         """
-        Manipulador para mudanças nas configurações.
+        Handler for configuration changes.
         """
         self.current_config = {
             'language': self.language_combo.currentData(),
@@ -147,9 +147,11 @@ class TranscriptionConfig(QWidget):
     
     def get_config(self):
         """
-        Retorna a configuração atual.
+        Returns the current configuration.
         
         Returns:
-            dict: Configuração atual
+            dict: Current configuration
         """
         return self.current_config
+
+

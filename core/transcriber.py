@@ -1,5 +1,5 @@
 """
-Módulo de transcrição usando a API Whisper da OpenAI.
+Transcription module using OpenAI's Whisper API.
 """
 import os
 import torch
@@ -10,7 +10,7 @@ from pathlib import Path
 
 class Transcriber:
     """
-    Classe para transcrição de áudio usando a API Whisper da OpenAI.
+    Class for audio transcription using OpenAI's Whisper API.
     """
     def __init__(self):
         self.transcription_thread = None
@@ -23,18 +23,18 @@ class Transcriber:
     
     def transcribe(self, file_path, config, progress_callback=None, completion_callback=None, error_callback=None):
         """
-        Inicia a transcrição de um arquivo de áudio.
+        Starts transcription of an audio file.
         
         Args:
-            file_path (str): Caminho do arquivo de áudio
-            config (dict): Configurações de transcrição (idioma, modelo, dispositivo)
-            progress_callback (callable): Função de callback para atualização de progresso
-            completion_callback (callable): Função de callback para conclusão da transcrição
-            error_callback (callable): Função de callback para erros
+            file_path (str): Path to the audio file
+            config (dict): Transcription settings (language, model, device)
+            progress_callback (callable): Callback function for progress updates
+            completion_callback (callable): Callback function for transcription completion
+            error_callback (callable): Callback function for errors
         """
         if self.is_transcribing:
             if error_callback:
-                error_callback("Já existe uma transcrição em andamento.")
+                error_callback("A transcription is already in progress.")
             return
         
         self.is_transcribing = True
@@ -42,7 +42,7 @@ class Transcriber:
         self.start_time = time.time()
         self.estimated_total_time = 0
         
-        # Iniciar thread de transcrição
+        # Start transcription thread
         self.transcription_thread = threading.Thread(
             target=self._transcribe_thread,
             args=(file_path, config, progress_callback, completion_callback, error_callback)
@@ -52,38 +52,38 @@ class Transcriber:
     
     def _transcribe_thread(self, file_path, config, progress_callback, completion_callback, error_callback):
         """
-        Thread de transcrição.
+        Transcription thread.
         
         Args:
-            file_path (str): Caminho do arquivo de áudio
-            config (dict): Configurações de transcrição (idioma, modelo, dispositivo)
-            progress_callback (callable): Função de callback para atualização de progresso
-            completion_callback (callable): Função de callback para conclusão da transcrição
-            error_callback (callable): Função de callback para erros
+            file_path (str): Path to the audio file
+            config (dict): Transcription settings (language, model, device)
+            progress_callback (callable): Callback function for progress updates
+            completion_callback (callable): Callback function for transcription completion
+            error_callback (callable): Callback function for errors
         """
         try:
-            # Verificar se o arquivo existe
+            # Check if file exists
             if not os.path.isfile(file_path):
                 if error_callback:
-                    error_callback(f"Arquivo não encontrado: {file_path}")
+                    error_callback(f"File not found: {file_path}")
                 return
             
-            # Extrair configurações
-            model_name = config.get('model', 'base')
-            language = config.get('language', 'auto')
-            device = config.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
+            # Extract settings
+            model_name = config.get("model", "base")
+            language = config.get("language", "auto")
+            device = config.get("device", "cuda" if torch.cuda.is_available() else "cpu")
             
-            # Verificar disponibilidade de GPU
-            if device == 'cuda' and not torch.cuda.is_available():
+            # Check GPU availability
+            if device == "cuda" and not torch.cuda.is_available():
                 if progress_callback:
-                    progress_callback(0, "GPU não disponível, usando CPU")
-                device = 'cpu'
+                    progress_callback(0, "GPU not available, using CPU")
+                device = "cpu"
             
-            # Carregar modelo se necessário
+            # Load model if necessary
             if progress_callback:
-                progress_callback(10, f"Carregando modelo {model_name}...")
+                progress_callback(10, f"Loading model {model_name}...")
             
-            # Carregar novo modelo apenas se for diferente do atual
+            # Load new model only if it's different from the current one
             if self.model is None or self.current_model_name != model_name:
                 self.model = whisper.load_model(model_name, device=device)
                 self.current_model_name = model_name
@@ -91,40 +91,40 @@ class Transcriber:
             if self.cancel_requested:
                 return
             
-            # Configurar opções de transcrição
+            # Configure transcription options
             transcribe_options = {}
             
-            # Definir idioma se não for automático
-            if language != 'auto':
-                transcribe_options['language'] = language
+            # Set language if not auto
+            if language != "auto":
+                transcribe_options["language"] = language
             
-            # Configurar fp16 com base no dispositivo
-            transcribe_options['fp16'] = (device == 'cuda')
+            # Configure fp16 based on device
+            transcribe_options["fp16"] = (device == "cuda")
             
-            # Estimar tempo total com base no tamanho do arquivo e modelo
+            # Estimate total time based on file size and model
             file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
             
-            # Fatores de estimativa de tempo por modelo (segundos por MB)
+            # Time estimation factors per model (seconds per MB)
             time_factors = {
-                'tiny': 1.0,
-                'base': 2.0,
-                'small': 4.0,
-                'medium': 8.0,
-                'large': 16.0
+                "tiny": 1.0,
+                "base": 2.0,
+                "small": 4.0,
+                "medium": 8.0,
+                "large": 16.0
             }
             
-            # Ajustar fator com base no dispositivo
-            device_factor = 1.0 if device == 'cuda' else 3.0
+            # Adjust factor based on device
+            device_factor = 1.0 if device == "cuda" else 3.0
             
-            # Calcular estimativa de tempo
+            # Calculate time estimate
             self.estimated_total_time = file_size_mb * time_factors.get(model_name, 2.0) * device_factor
             
             if progress_callback:
                 elapsed_time = time.time() - self.start_time
                 remaining_time = max(0, self.estimated_total_time - elapsed_time)
-                progress_callback(30, f"Iniciando transcrição... Tempo estimado: {format_time(self.estimated_total_time)}")
+                progress_callback(30, f"Starting transcription... Estimated time: {format_time(self.estimated_total_time)}")
             
-            # Realizar transcrição
+            # Perform transcription
             result = self.model.transcribe(file_path, **transcribe_options)
             
             if self.cancel_requested:
@@ -132,12 +132,12 @@ class Transcriber:
             
             if progress_callback:
                 elapsed_time = time.time() - self.start_time
-                progress_callback(90, f"Finalizando transcrição... Tempo decorrido: {format_time(elapsed_time)}")
+                progress_callback(90, f"Finalizing transcription... Elapsed time: {format_time(elapsed_time)}")
             
-            # Extrair texto
-            transcribed_text = result.get('text', '')
+            # Extract text
+            transcribed_text = result.get("text", "")
             
-            # Calcular tempo total
+            # Calculate total time
             total_time = time.time() - self.start_time
             
             if completion_callback:
@@ -145,14 +145,14 @@ class Transcriber:
         
         except Exception as e:
             if error_callback:
-                error_callback(f"Erro na transcrição: {str(e)}")
+                error_callback(f"Transcription error: {str(e)}")
         
         finally:
             self.is_transcribing = False
     
     def cancel(self):
         """
-        Cancela a transcrição em andamento.
+        Cancels the ongoing transcription.
         """
         if self.is_transcribing:
             self.cancel_requested = True
@@ -161,13 +161,13 @@ class Transcriber:
 
 def format_time(seconds):
     """
-    Formata o tempo em segundos para uma string legível.
+    Formats time in seconds to a readable string.
     
     Args:
-        seconds (float): Tempo em segundos
+        seconds (float): Time in seconds
         
     Returns:
-        str: Tempo formatado
+        str: Formatted time
     """
     minutes, seconds = divmod(int(seconds), 60)
     hours, minutes = divmod(minutes, 60)
@@ -178,3 +178,5 @@ def format_time(seconds):
         return f"{minutes}min {seconds}s"
     else:
         return f"{seconds}s"
+
+

@@ -1,5 +1,5 @@
 """
-Módulo de gerenciamento de arquivos para o aplicativo de transcrição.
+File management module for the transcription application.
 """
 import os
 import shutil
@@ -7,25 +7,25 @@ from pathlib import Path
 
 class FileManager:
     """
-    Classe para gerenciamento de operações de arquivo.
+    Class for managing file operations.
     """
     @staticmethod
     def is_valid_media_file(file_path):
         """
-        Verifica se o arquivo é um arquivo de mídia válido.
+        Checks if the file is a valid media file.
         
         Args:
-            file_path (str): Caminho do arquivo
+            file_path (str): File path
             
         Returns:
-            bool: True se for um arquivo de mídia válido, False caso contrário
+            bool: True if it's a valid media file, False otherwise
         """
         if not os.path.isfile(file_path):
             return False
         
         valid_extensions = [
-            '.mp3', '.mp4', '.wav', '.ogg', '.flac', 
-            '.avi', '.mov', '.mkv', '.webm', '.m4a'
+            ".mp3", ".mp4", ".wav", ".ogg", ".flac", 
+            ".avi", ".mov", ".mkv", ".webm", ".m4a"
         ]
         
         _, ext = os.path.splitext(file_path)
@@ -34,18 +34,18 @@ class FileManager:
     @staticmethod
     def is_youtube_url(url):
         """
-        Verifica se a URL é uma URL do YouTube válida.
+        Checks if the URL is a valid YouTube URL.
         
         Args:
-            url (str): URL a ser verificada
+            url (str): URL to be checked
             
         Returns:
-            bool: True se for uma URL do YouTube válida, False caso contrário
+            bool: True if it's a valid YouTube URL, False otherwise
         """
         youtube_domains = [
-            'youtube.com', 'www.youtube.com', 
-            'youtu.be', 'www.youtu.be',
-            'm.youtube.com'
+            "youtube.com", "www.youtube.com", 
+            "youtu.be", "www.youtu.be",
+            "m.youtube.com"
         ]
         
         try:
@@ -58,23 +58,23 @@ class FileManager:
     @staticmethod
     def get_default_save_directory():
         """
-        Retorna o diretório padrão para salvar arquivos.
+        Returns the default directory for saving files.
         
         Returns:
-            str: Caminho do diretório padrão
+            str: Path to the default directory
         """
         return str(Path.home() / "Downloads")
     
     @staticmethod
     def ensure_directory_exists(directory):
         """
-        Garante que o diretório exista, criando-o se necessário.
+        Ensures that the directory exists, creating it if necessary.
         
         Args:
-            directory (str): Caminho do diretório
+            directory (str): Directory path
             
         Returns:
-            bool: True se o diretório existir ou for criado com sucesso, False caso contrário
+            bool: True if the directory exists or is created successfully, False otherwise
         """
         try:
             os.makedirs(directory, exist_ok=True)
@@ -85,34 +85,34 @@ class FileManager:
     @staticmethod
     def get_file_name(file_path):
         """
-        Retorna o nome do arquivo sem o caminho e a extensão.
+        Returns the file name without path and extension.
         
         Args:
-            file_path (str): Caminho completo do arquivo
+            file_path (str): Full file path
             
         Returns:
-            str: Nome do arquivo sem extensão
+            str: File name without extension
         """
         return os.path.splitext(os.path.basename(file_path))[0]
     
     @staticmethod
     def save_text_file(text, file_path):
         """
-        Salva texto em um arquivo.
+        Saves text to a file.
         
         Args:
-            text (str): Texto a ser salvo
-            file_path (str): Caminho do arquivo
+            text (str): Text to be saved
+            file_path (str): File path
             
         Returns:
-            bool: True se o arquivo for salvo com sucesso, False caso contrário
+            bool: True if the file is saved successfully, False otherwise
         """
         try:
-            # Garantir que o diretório exista
+            # Ensure the directory exists
             os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
             
-            # Salvar o arquivo
-            with open(file_path, 'w', encoding='utf-8') as f:
+            # Save the file
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(text)
             
             return True
@@ -122,20 +122,20 @@ class FileManager:
     @staticmethod
     def find_media_files_in_folder(folder_path):
         """
-        Encontra todos os arquivos de mídia em uma pasta.
+        Finds all media files in a folder.
         
         Args:
-            folder_path (str): Caminho da pasta
+            folder_path (str): Folder path
             
         Returns:
-            list: Lista de caminhos de arquivos de mídia
+            list: List of media file paths
         """
         if not os.path.isdir(folder_path):
             return []
         
         media_extensions = [
-            '.mp3', '.mp4', '.wav', '.ogg', '.flac', 
-            '.avi', '.mov', '.mkv', '.webm', '.m4a'
+            ".mp3", ".mp4", ".wav", ".ogg", ".flac", 
+            ".avi", ".mov", ".mkv", ".webm", ".m4a"
         ]
         
         media_files = []
@@ -145,3 +145,5 @@ class FileManager:
                     media_files.append(os.path.join(root, file))
         
         return media_files
+
+

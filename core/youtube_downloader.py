@@ -1,5 +1,5 @@
 """
-Módulo de backend para download de vídeos do YouTube.
+Backend module for downloading YouTube videos.
 """
 import os
 import subprocess
@@ -8,7 +8,7 @@ from pathlib import Path
 
 class YouTubeDownloader:
     """
-    Classe para download de vídeos do YouTube usando yt-dlp.
+    Class for downloading YouTube videos using yt-dlp.
     """
     def __init__(self):
         self.download_thread = None
@@ -18,22 +18,22 @@ class YouTubeDownloader:
     
     def download(self, url, progress_callback=None, completion_callback=None, error_callback=None):
         """
-        Inicia o download de um vídeo do YouTube.
+        Starts downloading a YouTube video.
         
         Args:
-            url (str): URL do vídeo do YouTube
-            progress_callback (callable): Função de callback para atualização de progresso
-            completion_callback (callable): Função de callback para conclusão do download
-            error_callback (callable): Função de callback para erros
+            url (str): YouTube video URL
+            progress_callback (callable): Callback function for progress updates
+            completion_callback (callable): Callback function for download completion
+            error_callback (callable): Callback function for errors
         """
         if self.is_downloading:
             if error_callback:
-                error_callback("Já existe um download em andamento.")
+                error_callback("A download is already in progress.")
             return
         
         self.is_downloading = True
         
-        # Iniciar thread de download
+        # Start download thread
         self.download_thread = threading.Thread(
             target=self._download_thread,
             args=(url, progress_callback, completion_callback, error_callback)
@@ -43,19 +43,19 @@ class YouTubeDownloader:
     
     def _download_thread(self, url, progress_callback, completion_callback, error_callback):
         """
-        Thread de download.
+        Download thread.
         
         Args:
-            url (str): URL do vídeo do YouTube
-            progress_callback (callable): Função de callback para atualização de progresso
-            completion_callback (callable): Função de callback para conclusão do download
-            error_callback (callable): Função de callback para erros
+            url (str): YouTube video URL
+            progress_callback (callable): Callback function for progress updates
+            completion_callback (callable): Callback function for download completion
+            error_callback (callable): Callback function for errors
         """
         try:
-            # Criar diretório de downloads se não existir
+            # Create downloads directory if it doesn't exist
             os.makedirs(self.download_path, exist_ok=True)
             
-            # Comando para download apenas do áudio (formato mp3)
+            # Command to download only audio (mp3 format)
             cmd = [
                 "yt-dlp",
                 "-f", "bestaudio",
@@ -68,7 +68,7 @@ class YouTubeDownloader:
                 url
             ]
             
-            # Iniciar processo
+            # Start process
             self.current_process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -78,12 +78,12 @@ class YouTubeDownloader:
                 universal_newlines=True
             )
             
-            # Monitorar saída para atualização de progresso
+            # Monitor output for progress updates
             output_file = None
             for line in self.current_process.stdout:
                 if "[download]" in line and "%" in line:
                     try:
-                        # Extrair porcentagem de progresso
+                        # Extract percentage progress
                         percent_str = line.split("%")[0].split()[-1]
                         percent = float(percent_str)
                         if progress_callback:
@@ -91,14 +91,14 @@ class YouTubeDownloader:
                     except (ValueError, IndexError):
                         pass
                 
-                # Capturar nome do arquivo de saída
+                # Capture output file name
                 if "Destination:" in line:
                     try:
                         output_file = line.split("Destination: ")[1].strip()
                     except (IndexError, AttributeError):
                         pass
             
-            # Verificar código de retorno
+            # Check return code
             return_code = self.current_process.wait()
             
             if return_code == 0:
@@ -107,11 +107,11 @@ class YouTubeDownloader:
             else:
                 error_message = self.current_process.stderr.read()
                 if error_callback:
-                    error_callback(f"Erro no download: {error_message}")
+                    error_callback(f"Download error: {error_message}")
         
         except Exception as e:
             if error_callback:
-                error_callback(f"Erro: {str(e)}")
+                error_callback(f"Error: {str(e)}")
         
         finally:
             self.is_downloading = False
@@ -119,7 +119,7 @@ class YouTubeDownloader:
     
     def cancel(self):
         """
-        Cancela o download em andamento.
+        Cancels the ongoing download.
         """
         if self.is_downloading and self.current_process:
             try:
@@ -130,3 +130,5 @@ class YouTubeDownloader:
             except Exception:
                 return False
         return False
+
+

@@ -1,5 +1,5 @@
 """
-Módulo de processamento em lote para o aplicativo de transcrição.
+Batch processing module for the transcription application.
 """
 import os
 import threading
@@ -9,18 +9,18 @@ from PySide6.QtCore import QObject, Signal
 
 class BatchProcessorSignals(QObject):
     """
-    Sinais para comunicação com a interface durante o processamento em lote.
+    Signals for communication with the interface during batch processing.
     """
-    item_completed = Signal(int, str, str)  # índice, caminho, texto
-    batch_progress = Signal(int, str)  # porcentagem, mensagem
-    item_progress = Signal(int, int, str)  # índice, porcentagem, mensagem
-    batch_completed = Signal(dict)  # resultados
-    error_occurred = Signal(str)  # mensagem de erro
-    confirmation_needed = Signal(int, str, str)  # índice, caminho, texto
+    item_completed = Signal(int, str, str)  # index, path, text
+    batch_progress = Signal(int, str)  # percentage, message
+    item_progress = Signal(int, int, str)  # index, percentage, message
+    batch_completed = Signal(dict)  # results
+    error_occurred = Signal(str)  # error message
+    confirmation_needed = Signal(int, str, str)  # index, path, text
 
 class BatchProcessor:
     """
-    Classe para gerenciamento de processamento em lote.
+    Class for managing batch processing.
     """
     def __init__(self, transcriber):
         self.transcriber = transcriber
@@ -36,14 +36,14 @@ class BatchProcessor:
     
     def process_batch(self, items, config):
         """
-        Inicia o processamento em lote.
+        Starts batch processing.
         
         Args:
-            items (list): Lista de itens (caminhos de arquivo)
-            config (dict): Configurações de transcrição
+            items (list): List of items (file paths)
+            config (dict): Transcription settings
         """
         if self.is_processing:
-            self.signals.error_occurred.emit("Já existe um processamento em lote em andamento.")
+            self.signals.error_occurred.emit("A batch process is already in progress.")
             return
         
         self.is_processing = True
@@ -53,14 +53,14 @@ class BatchProcessor:
         self.results = {}
         self.waiting_confirmation = False
         
-        # Limpar e preencher a fila
+        # Clear and populate the queue
         while not self.items_queue.empty():
             self.items_queue.get()
         
         for item in items:
             self.items_queue.put(item)
         
-        # Iniciar thread de processamento em lote
+        # Start batch processing thread
         self.batch_thread = threading.Thread(
             target=self._batch_thread,
             args=(items, config)
@@ -70,90 +70,90 @@ class BatchProcessor:
     
     def _batch_thread(self, items, config):
         """
-        Thread de processamento em lote.
+        Batch processing thread.
         
         Args:
-            items (list): Lista de itens (caminhos de arquivo)
-            config (dict): Configurações de transcrição
+            items (list): List of items (file paths)
+            config (dict): Transcription settings
         """
         try:
             total_items = len(items)
             processed_items = 0
             
             while not self.items_queue.empty() and not self.cancel_requested:
-                # Obter próximo item
+                # Get next item
                 item = self.items_queue.get()
                 self.current_item_index += 1
                 
-                # Atualizar progresso do lote
+                # Update batch progress
                 batch_progress = int((processed_items / total_items) * 100)
                 self.signals.batch_progress.emit(
                     batch_progress, 
-                    f"Processando item {processed_items + 1} de {total_items}: {os.path.basename(item)}"
+                    f"Processing item {processed_items + 1} of {total_items}: {os.path.basename(item)}"
                 )
                 
-                # Processar arquivo de mídia
+                # Process media file
                 self._process_media_file(item, config)
                 
-                # Aguardar confirmação antes de prosseguir
+                # Wait for confirmation before proceeding
                 self.waiting_confirmation = True
                 while self.waiting_confirmation and not self.cancel_requested:
-                    # Esperar pela confirmação do usuário
+                    # Wait for user confirmation
                     threading.Event().wait(0.1)
                 
                 processed_items += 1
                 
-                # Verificar cancelamento após cada item
+                # Check for cancellation after each item
                 if self.cancel_requested:
                     break
             
-            # Finalizar processamento em lote
+            # Finalize batch processing
             if not self.cancel_requested:
                 self.signals.batch_completed.emit(self.results)
         
         except Exception as e:
-            self.signals.error_occurred.emit(f"Erro no processamento em lote: {str(e)}")
+            self.signals.error_occurred.emit(f"Error in batch processing: {str(e)}")
         
         finally:
             self.is_processing = False
     
     def _process_media_file(self, file_path, config):
         """
-        Processa um arquivo de mídia.
+        Processes a media file.
         
         Args:
-            file_path (str): Caminho do arquivo de mídia
-            config (dict): Configurações de transcrição
+            file_path (str): Path to the media file
+            config (dict): Transcription settings
         """
         if not os.path.isfile(file_path):
-            self.signals.error_occurred.emit(f"Arquivo não encontrado: {file_path}")
+            self.signals.error_occurred.emit(f"File not found: {file_path}")
             return
         
-        self.signals.item_progress.emit(self.current_item_index, 0, "Iniciando transcrição...")
+        self.signals.item_progress.emit(self.current_item_index, 0, "Starting transcription...")
         
-        # Configurar callbacks para transcrição
+        # Configure callbacks for transcription
         def transcribe_progress(percent, status=None):
             self.signals.item_progress.emit(
                 self.current_item_index, 
                 percent, 
-                status or f"Transcrição: {percent}%"
+                status or f"Transcription: {percent}%"
             )
         
         def transcribe_complete(text):
-            self.signals.item_progress.emit(self.current_item_index, 100, "Transcrição concluída")
+            self.signals.item_progress.emit(self.current_item_index, 100, "Transcription completed")
             
-            # Armazenar resultado
+            # Store result
             self.results[file_path] = text
             
-            # Solicitar confirmação do usuário
+            # Request user confirmation
             self.signals.confirmation_needed.emit(self.current_item_index, file_path, text)
         
         def transcribe_error(error_msg):
             self.signals.error_occurred.emit(error_msg)
-            # Passar para o próximo item
+            # Proceed to the next item
             self.waiting_confirmation = False
         
-        # Iniciar transcrição
+        # Start transcription
         self.transcriber.transcribe(
             file_path,
             config,
@@ -164,44 +164,44 @@ class BatchProcessor:
     
     def confirm_and_continue(self, save=True, file_path=None, text=None):
         """
-        Confirma o processamento do item atual e continua para o próximo.
+        Confirms processing of the current item and continues to the next.
         
         Args:
-            save (bool): Se True, salva o arquivo de texto
-            file_path (str): Caminho do arquivo processado
-            text (str): Texto transcrito
+            save (bool): If True, saves the text file
+            file_path (str): Path to the processed file
+            text (str): Transcribed text
         """
         if save and file_path and text:
             try:
-                # Determinar o diretório e nome do arquivo
+                # Determine directory and file name
                 output_dir = os.path.dirname(file_path)
                 base_name = os.path.splitext(os.path.basename(file_path))[0]
                 output_path = os.path.join(output_dir, f"{base_name}.txt")
                 
-                # Salvar o arquivo
-                with open(output_path, 'w', encoding='utf-8') as f:
+                # Save the file
+                with open(output_path, "w", encoding="utf-8") as f:
                     f.write(text)
                 
-                # Notificar conclusão do item
+                # Notify item completion
                 self.signals.item_completed.emit(self.current_item_index, file_path, output_path)
             except Exception as e:
-                self.signals.error_occurred.emit(f"Erro ao salvar arquivo: {str(e)}")
+                self.signals.error_occurred.emit(f"Error saving file: {str(e)}")
         
-        # Continuar para o próximo item
+        # Continue to the next item
         self.waiting_confirmation = False
     
     def cancel(self):
         """
-        Cancela o processamento em lote.
+        Cancels batch processing.
         
         Returns:
-            bool: True se o cancelamento foi iniciado, False caso contrário
+            bool: True if cancellation was initiated, False otherwise
         """
         if self.is_processing:
             self.cancel_requested = True
             self.waiting_confirmation = False
             
-            # Cancelar operações em andamento
+            # Cancel ongoing operations
             if self.transcriber.is_transcribing:
                 self.transcriber.cancel()
             
@@ -211,22 +211,24 @@ class BatchProcessor:
     
     def cancel_item(self, index):
         """
-        Cancela um item específico do lote.
+        Cancels a specific item in the batch.
         
         Args:
-            index (int): Índice do item a ser cancelado
+            index (int): Index of the item to be canceled
             
         Returns:
-            bool: True se o cancelamento foi iniciado, False caso contrário
+            bool: True if cancellation was initiated, False otherwise
         """
         if self.is_processing and index == self.current_item_index:
-            # Cancelar operação atual
+            # Cancel current operation
             if self.transcriber.is_transcribing:
                 self.transcriber.cancel()
             
-            # Passar para o próximo item
+            # Proceed to the next item
             self.waiting_confirmation = False
             
             return True
         
         return False
+
+

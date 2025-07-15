@@ -1,5 +1,5 @@
 """
-Componente de lista de processamento em lote para o aplicativo de transcrição.
+Batch processing list component for the transcription application.
 """
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
@@ -9,9 +9,9 @@ from PySide6.QtCore import Qt, Signal
 
 class BatchList(QWidget):
     """
-    Widget para gerenciar a lista de arquivos para processamento em lote.
+    Widget for managing the list of files for batch processing.
     """
-    # Sinais
+    # Signals
     batch_process_requested = Signal(list)
     item_removed = Signal(int)
     folder_selected = Signal(str)
@@ -19,18 +19,18 @@ class BatchList(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        # Layout principal
+        # Main layout
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         
-        # Título
-        title_label = QLabel("Lista de Arquivos para Processamento em Lote")
+        # Title
+        title_label = QLabel("Files for Batch Processing")
         self.layout.addWidget(title_label)
         
-        # Botões de adição
+        # Add buttons
         add_layout = QHBoxLayout()
         
-        self.add_folder_button = QPushButton("Adicionar Pasta")
+        self.add_folder_button = QPushButton("Add Folder")
         self.add_folder_button.clicked.connect(self.on_add_folder_clicked)
         add_layout.addWidget(self.add_folder_button)
         
@@ -38,61 +38,61 @@ class BatchList(QWidget):
         
         self.layout.addLayout(add_layout)
         
-        # Lista de arquivos
+        # File list
         self.file_list = QListWidget()
         self.layout.addWidget(self.file_list)
         
-        # Botões de ação
+        # Action buttons
         button_layout = QHBoxLayout()
         
-        self.process_all_button = QPushButton("Processar Todos")
+        self.process_all_button = QPushButton("Process All")
         self.process_all_button.clicked.connect(self.on_process_all_clicked)
         button_layout.addWidget(self.process_all_button)
         
-        self.remove_selected_button = QPushButton("Remover Selecionado")
+        self.remove_selected_button = QPushButton("Remove Selected")
         self.remove_selected_button.clicked.connect(self.on_remove_selected_clicked)
         button_layout.addWidget(self.remove_selected_button)
         
-        self.clear_all_button = QPushButton("Limpar Lista")
+        self.clear_all_button = QPushButton("Clear List")
         self.clear_all_button.clicked.connect(self.on_clear_all_clicked)
         button_layout.addWidget(self.clear_all_button)
         
         self.layout.addLayout(button_layout)
         
-        # Atualizar estado dos botões
+        # Update button states
         self._update_button_states()
     
     def add_item(self, path):
         """
-        Adiciona um item à lista de lote.
+        Adds an item to the batch list.
         
         Args:
-            path (str): Caminho do arquivo ou URL do YouTube
+            path (str): File path or YouTube URL
         """
-        # Verificar se o item já existe na lista
+        # Check if the item already exists in the list
         for i in range(self.file_list.count()):
             if self.file_list.item(i).text() == path:
                 QMessageBox.information(
                     self,
-                    "Item Duplicado",
-                    "Este item já está na lista de processamento."
+                    "Duplicate Item",
+                    "This item is already in the processing list."
                 )
                 return
         
-        # Adicionar novo item
+        # Add new item
         item = QListWidgetItem(path)
         self.file_list.addItem(item)
         
-        # Atualizar estado dos botões
+        # Update button states
         self._update_button_states()
     
     def on_add_folder_clicked(self):
         """
-        Manipulador para o clique no botão de adicionar pasta.
+        Handler for the add folder button click.
         """
         folder_path = QFileDialog.getExistingDirectory(
             self,
-            "Selecionar Pasta com Arquivos de Áudio/Vídeo",
+            "Select Folder with Audio/Video Files",
             ""
         )
         
@@ -101,7 +101,7 @@ class BatchList(QWidget):
     
     def on_process_all_clicked(self):
         """
-        Manipulador para o clique no botão de processar todos.
+        Handler for the process all button click.
         """
         if self.file_list.count() > 0:
             items = [self.file_list.item(i).text() for i in range(self.file_list.count())]
@@ -109,7 +109,7 @@ class BatchList(QWidget):
     
     def on_remove_selected_clicked(self):
         """
-        Manipulador para o clique no botão de remover selecionado.
+        Handler for the remove selected button click.
         """
         selected_items = self.file_list.selectedItems()
         if selected_items:
@@ -118,30 +118,30 @@ class BatchList(QWidget):
                 self.file_list.takeItem(row)
                 self.item_removed.emit(row)
             
-            # Atualizar estado dos botões
+            # Update button states
             self._update_button_states()
     
     def on_clear_all_clicked(self):
         """
-        Manipulador para o clique no botão de limpar lista.
+        Handler for the clear list button click.
         """
         if self.file_list.count() > 0:
             confirm = QMessageBox.question(
                 self,
-                "Confirmar Limpeza",
-                "Tem certeza que deseja limpar toda a lista?",
+                "Confirm Clear",
+                "Are you sure you want to clear the entire list?",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No
             )
             
             if confirm == QMessageBox.Yes:
                 self.file_list.clear()
-                # Atualizar estado dos botões
+                # Update button states
                 self._update_button_states()
     
     def _update_button_states(self):
         """
-        Atualiza o estado dos botões com base no conteúdo da lista.
+        Updates the state of buttons based on the list content.
         """
         has_items = self.file_list.count() > 0
         self.process_all_button.setEnabled(has_items)
@@ -152,9 +152,11 @@ class BatchList(QWidget):
     
     def get_all_items(self):
         """
-        Retorna todos os itens da lista.
+        Returns all items in the list.
         
         Returns:
-            list: Lista de caminhos de arquivo/URLs
+            list: List of file paths/URLs
         """
         return [self.file_list.item(i).text() for i in range(self.file_list.count())]
+
+

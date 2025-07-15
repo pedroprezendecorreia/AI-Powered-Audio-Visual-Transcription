@@ -1,8 +1,8 @@
 """
-Script de instalação para o Whisper Transcriber.
+Installation script for Whisper Transcriber.
 
-Este script instala todas as dependências necessárias para o aplicativo,
-verifica a presença do FFmpeg e configura o ambiente.
+This script installs all necessary dependencies for the application,
+checks for FFmpeg presence, and configures the environment.
 """
 import os
 import sys
@@ -16,17 +16,17 @@ import urllib.request
 import zipfile
 
 def print_header(text):
-    """Imprime um cabeçalho formatado."""
+    """Prints a formatted header."""
     print("\n" + "=" * 60)
     print(f" {text}")
     print("=" * 60)
 
 def print_step(text):
-    """Imprime um passo da instalação."""
+    """Prints an installation step."""
     print(f"\n>> {text}")
 
 def run_command(command, check=True):
-    """Executa um comando e retorna o resultado."""
+    """Executes a command and returns the result."""
     try:
         result = subprocess.run(
             command,
@@ -37,27 +37,27 @@ def run_command(command, check=True):
         )
         return result
     except subprocess.CalledProcessError as e:
-        print(f"Erro ao executar comando: {e}")
+        print(f"Error executing command: {e}")
         return None
 
 def check_python_version():
-    """Verifica se a versão do Python é compatível."""
-    print_step("Verificando versão do Python")
+    """Checks if the Python version is compatible."""
+    print_step("Checking Python version")
     
     major, minor = sys.version_info[:2]
     if major < 3 or (major == 3 and minor < 8):
-        print(f"Versão do Python incompatível: {major}.{minor}")
-        print("O Whisper Transcriber requer Python 3.8 ou superior.")
+        print(f"Incompatible Python version: {major}.{minor}")
+        print("Whisper Transcriber requires Python 3.8 or higher.")
         return False
     
-    print(f"Versão do Python: {major}.{minor} (OK)")
+    print(f"Python version: {major}.{minor} (OK)")
     return True
 
 def install_pip_dependencies():
-    """Instala as dependências via pip."""
-    print_step("Instalando dependências via pip")
+    """Installs dependencies via pip."""
+    print_step("Installing pip dependencies")
     
-    # Instalar dependências básicas
+    # Install basic dependencies
     basic_dependencies = [
         "PySide6",
         "openai-whisper",
@@ -65,78 +65,78 @@ def install_pip_dependencies():
     ]
     
     for dep in basic_dependencies:
-        print(f"Instalando {dep}...")
+        print(f"Installing {dep}...")
         result = run_command([sys.executable, "-m", "pip", "install", dep])
         if result and result.returncode == 0:
-            print(f"{dep} instalado com sucesso.")
+            print(f"{dep} installed successfully.")
         else:
-            print(f"Erro ao instalar {dep}. Por favor, instale manualmente: pip install {dep}")
+            print(f"Error installing {dep}. Please install manually: pip install {dep}")
     
-    # Instalar PyTorch separadamente
-    print_step("Instalando PyTorch")
+    # Install PyTorch separately
+    print_step("Installing PyTorch")
     
-    # Instalar cada componente do PyTorch separadamente
+    # Install each PyTorch component separately
     torch_components = ["torch", "torchvision", "torchaudio"]
     
     for component in torch_components:
-        print(f"Instalando {component}...")
+        print(f"Installing {component}...")
         result = run_command([sys.executable, "-m", "pip", "install", component], check=False)
         if result and result.returncode == 0:
-            print(f"{component} instalado com sucesso.")
+            print(f"{component} installed successfully.")
         else:
-            print(f"Aviso: Não foi possível instalar {component} automaticamente.")
-            print(f"Por favor, instale manualmente: pip install {component}")
+            print(f"Warning: Could not install {component} automatically.")
+            print(f"Please install manually: pip install {component}")
             
-            # Para o torch, oferecer instruções adicionais
+            # For torch, provide additional instructions
             if component == "torch":
-                print("\nPara instalar o PyTorch manualmente:")
-                print("1. Visite https://pytorch.org/get-started/locally/")
-                print("2. Selecione suas preferências e copie o comando de instalação")
-                print("3. Execute o comando no prompt de comando")
+                print("\nTo install PyTorch manually:")
+                print("1. Visit https://pytorch.org/get-started/locally/")
+                print("2. Select your preferences and copy the installation command")
+                print("3. Execute the command in your command prompt")
 
 def check_ffmpeg():
-    """Verifica se o FFmpeg está instalado e, se não, tenta instalá-lo."""
-    print_step("Verificando FFmpeg")
+    """Checks if FFmpeg is installed and attempts to install it if not."""
+    print_step("Checking FFmpeg")
     
-    # Verificar se o FFmpeg já está instalado
+    # Check if FFmpeg is already installed
     result = run_command(["ffmpeg", "-version"], check=False)
     if result and result.returncode == 0:
-        print("FFmpeg já está instalado.")
+        print("FFmpeg is already installed.")
         return True
     
-    print("FFmpeg não encontrado. Tentando instalar...")
+    print("FFmpeg not found. Attempting to install...")
     
     if platform.system() == "Windows":
         return install_ffmpeg_windows()
     else:
-        print("Instalação automática do FFmpeg só é suportada no Windows.")
-        print("Por favor, instale o FFmpeg manualmente:")
-        print("1. Baixe em https://ffmpeg.org/download.html")
-        print("2. Extraia o arquivo e adicione a pasta 'bin' ao PATH do sistema")
+        print("Automatic FFmpeg installation is only supported on Windows.")
+        print("Please install FFmpeg manually:")
+        print("1. Download from https://ffmpeg.org/download.html")
+        print("2. Extract the archive and add the 'bin' folder to your system's PATH")
         return False
 
 def install_ffmpeg_windows():
-    """Instala o FFmpeg no Windows."""
+    """Installs FFmpeg on Windows."""
     try:
-        # URL do FFmpeg para Windows (versão estática)
+        # FFmpeg URL for Windows (static version)
         ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
         
-        # Diretório de instalação
+        # Installation directory
         install_dir = os.path.join(os.path.expanduser("~"), "ffmpeg")
         os.makedirs(install_dir, exist_ok=True)
         
-        # Baixar o arquivo
-        print("Baixando FFmpeg...")
+        # Download the file
+        print("Downloading FFmpeg...")
         with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_file:
             temp_path = temp_file.name
             urllib.request.urlretrieve(ffmpeg_url, temp_path)
         
-        # Extrair o arquivo
-        print("Extraindo FFmpeg...")
+        # Extract the file
+        print("Extracting FFmpeg...")
         with zipfile.ZipFile(temp_path, 'r') as zip_ref:
             zip_ref.extractall(install_dir)
         
-        # Encontrar a pasta bin
+        # Find the bin folder
         ffmpeg_bin = None
         for root, dirs, files in os.walk(install_dir):
             if "bin" in dirs:
@@ -144,34 +144,34 @@ def install_ffmpeg_windows():
                 break
         
         if not ffmpeg_bin:
-            print("Não foi possível encontrar a pasta 'bin' do FFmpeg.")
+            print("Could not find the 'bin' folder for FFmpeg.")
             return False
         
-        # Adicionar ao PATH
-        print("Adicionando FFmpeg ao PATH...")
+        # Add to PATH
+        print("Adding FFmpeg to PATH...")
         
-        # Adicionar ao PATH da sessão atual
+        # Add to current session's PATH
         os.environ["PATH"] = ffmpeg_bin + os.pathsep + os.environ["PATH"]
         
-        # Instruções para adicionar permanentemente ao PATH
-        print("\nPara adicionar o FFmpeg permanentemente ao PATH:")
-        print(f"1. Adicione o seguinte caminho às variáveis de ambiente: {ffmpeg_bin}")
-        print("2. Reinicie o prompt de comando após a alteração")
+        # Instructions to permanently add to PATH
+        print("\nTo permanently add FFmpeg to your PATH:")
+        print(f"1. Add the following path to your environment variables: {ffmpeg_bin}")
+        print("2. Restart your command prompt after the change")
         
-        # Verificar se a instalação funcionou
+        # Verify if installation worked
         result = run_command(["ffmpeg", "-version"], check=False)
         if result and result.returncode == 0:
-            print("FFmpeg instalado com sucesso.")
+            print("FFmpeg installed successfully.")
             return True
         else:
-            print("FFmpeg instalado, mas não está no PATH.")
+            print("FFmpeg installed, but not in PATH.")
             return False
     
     except Exception as e:
-        print(f"Erro ao instalar FFmpeg: {e}")
+        print(f"Error installing FFmpeg: {e}")
         return False
     finally:
-        # Limpar arquivo temporário
+        # Clean up temporary file
         if 'temp_path' in locals():
             try:
                 os.unlink(temp_path)
@@ -179,8 +179,8 @@ def install_ffmpeg_windows():
                 pass
 
 def check_cuda():
-    """Verifica se o CUDA está disponível."""
-    print_step("Verificando suporte a CUDA")
+    """Checks if CUDA is available."""
+    print_step("Checking CUDA support")
     
     try:
         import torch
@@ -190,23 +190,23 @@ def check_cuda():
             device_count = torch.cuda.device_count()
             device_name = torch.cuda.get_device_name(0) if device_count > 0 else "Unknown"
             
-            print(f"CUDA está disponível: {cuda_available}")
-            print(f"Dispositivos CUDA: {device_count}")
+            print(f"CUDA is available: {cuda_available}")
+            print(f"CUDA Devices: {device_count}")
             print(f"GPU: {device_name}")
         else:
-            print("CUDA não está disponível.")
-            print("O aplicativo usará a CPU para processamento por padrão.")
-            print("Para habilitar o processamento por GPU:")
-            print("1. Instale os drivers mais recentes da NVIDIA")
-            print("2. Instale o CUDA Toolkit compatível com sua versão do PyTorch")
+            print("CUDA is not available.")
+            print("The application will use CPU for processing by default.")
+            print("To enable GPU processing:")
+            print("1. Install the latest NVIDIA drivers")
+            print("2. Install the CUDA Toolkit compatible with your PyTorch version")
     
     except ImportError:
-        print("Não foi possível verificar o suporte a CUDA.")
-        print("Verifique se o PyTorch está instalado corretamente.")
+        print("Could not check CUDA support.")
+        print("Please ensure PyTorch is installed correctly.")
 
 def create_shortcut_windows():
-    """Cria um atalho para o aplicativo no Windows."""
-    print_step("Criando atalho para o aplicativo")
+    """Creates a shortcut for the application on Windows."""
+    print_step("Creating application shortcut")
     
     try:
         import winshell
@@ -225,37 +225,37 @@ def create_shortcut_windows():
         shortcut.WorkingDirectory = wDir
         shortcut.save()
         
-        print(f"Atalho criado em: {path}")
+        print(f"Shortcut created at: {path}")
     except ImportError:
-        print("Não foi possível criar o atalho.")
-        print("Para iniciar o aplicativo, execute: python main.py")
+        print("Could not create shortcut.")
+        print("To start the application, run: python main.py")
     except Exception as e:
-        print(f"Erro ao criar atalho: {e}")
-        print("Para iniciar o aplicativo, execute: python main.py")
+        print(f"Error creating shortcut: {e}")
+        print("To start the application, run: python main.py")
 
 def main():
-    """Função principal do script de instalação."""
-    print_header("Instalação do Whisper Transcriber")
+    """Main function of the installation script."""
+    print_header("Whisper Transcriber Installation")
     
-    # Verificar sistema operacional
+    # Check operating system
     if platform.system() != "Windows":
-        print("AVISO: Este aplicativo foi projetado para Windows.")
-        print("A instalação pode prosseguir, mas a compatibilidade não é garantida.")
+        print("WARNING: This application was designed for Windows.")
+        print("Installation may proceed, but compatibility is not guaranteed.")
     
-    # Verificar versão do Python
+    # Check Python version
     if not check_python_version():
         return
     
-    # Instalar dependências
+    # Install dependencies
     install_pip_dependencies()
     
-    # Verificar FFmpeg
+    # Check FFmpeg
     check_ffmpeg()
     
-    # Verificar CUDA
+    # Check CUDA
     check_cuda()
     
-    # Criar atalho (apenas Windows)
+    # Create shortcut (Windows only)
     if platform.system() == "Windows":
         try:
             run_command([sys.executable, "-m", "pip", "install", "pywin32", "winshell"], check=False)
@@ -263,9 +263,11 @@ def main():
         except:
             pass
     
-    print_header("Instalação Concluída")
-    print("O Whisper Transcriber foi instalado com sucesso!")
-    print("Para iniciar o aplicativo, execute: python main.py")
+    print_header("Installation Complete")
+    print("Whisper Transcriber installed successfully!")
+    print("To start the application, run: python main.py")
 
 if __name__ == "__main__":
     main()
+
+
