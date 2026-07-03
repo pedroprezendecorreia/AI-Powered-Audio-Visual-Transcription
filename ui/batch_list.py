@@ -2,8 +2,8 @@
 Batch processing list component for the transcription application.
 """
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
-    QListWidget, QListWidgetItem, QMessageBox, QFileDialog
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
+    QListWidget, QListWidgetItem, QMessageBox, QFileDialog, QCheckBox
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -41,7 +41,15 @@ class BatchList(QWidget):
         # File list
         self.file_list = QListWidget()
         self.layout.addWidget(self.file_list)
-        
+
+        # Auto-save option: when checked, the batch saves every transcription
+        # and moves on without asking for confirmation per file.
+        self.auto_continue_check = QCheckBox(
+            "Save all automatically (don't ask for each file)"
+        )
+        self.auto_continue_check.setChecked(True)
+        self.layout.addWidget(self.auto_continue_check)
+
         # Action buttons
         button_layout = QHBoxLayout()
         
@@ -153,10 +161,17 @@ class BatchList(QWidget):
     def get_all_items(self):
         """
         Returns all items in the list.
-        
+
         Returns:
             list: List of file paths/URLs
         """
         return [self.file_list.item(i).text() for i in range(self.file_list.count())]
+
+    def is_auto_continue(self):
+        """
+        Returns True if the batch should save every item automatically
+        without prompting for confirmation.
+        """
+        return self.auto_continue_check.isChecked()
 
 

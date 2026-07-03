@@ -32,13 +32,17 @@ class MediaInput(QWidget):
         """
         file_group = QGroupBox("Local File")
         file_layout = QVBoxLayout(file_group)
-        
+        file_layout.setContentsMargins(6, 10, 6, 6)
+        file_layout.setSpacing(12)
+
         # Description
         file_desc = QLabel("Select an audio or video file from your computer:")
+        file_desc.setWordWrap(True)
         file_layout.addWidget(file_desc)
-        
+
         # Input field and button
         file_input_layout = QHBoxLayout()
+        file_input_layout.setSpacing(8)
         
         self.file_path_input = QLineEdit()
         self.file_path_input.setPlaceholderText("File path...")
@@ -61,7 +65,8 @@ class MediaInput(QWidget):
         
         # Action buttons
         action_layout = QHBoxLayout()
-        
+        action_layout.setSpacing(8)
+
         self.transcribe_button = QPushButton("Transcribe")
         self.transcribe_button.clicked.connect(self.on_transcribe_clicked)
         action_layout.addWidget(self.transcribe_button)

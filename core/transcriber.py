@@ -1,177 +1,172 @@
 """
-Transcription module using OpenAI's Whisper API.
+Transcription module using faster-whisper (CTranslate2 backend).
+
+Chosen over openai-whisper because it is ~4x faster on CPU with int8
+quantization, uses a fraction of the RAM, needs no PyTorch, and bundles
+its own ffmpeg via PyAV. It also yields segments with timestamps, which
+lets us report *real* progress instead of a fixed fake curve.
 """
 import os
-import torch
-import whisper
 import threading
 import time
-from pathlib import Path
+from faster_whisper import WhisperModel
+
+# UI passes "large"; faster-whisper's best large checkpoint is "large-v3".
+_MODEL_ALIASES = {"large": "large-v3"}
+
 
 class Transcriber:
     """
-    Class for audio transcription using OpenAI's Whisper API.
+    Class for audio transcription using faster-whisper.
     """
     def __init__(self):
         self.transcription_thread = None
         self.is_transcribing = False
         self.model = None
         self.current_model_name = None
+        self.current_device = None
         self.cancel_requested = False
         self.start_time = 0
-        self.estimated_total_time = 0
-    
+
     def transcribe(self, file_path, config, progress_callback=None, completion_callback=None, error_callback=None):
         """
-        Starts transcription of an audio file.
-        
+        Starts transcription of an audio file (runs in a background thread).
+
         Args:
             file_path (str): Path to the audio file
             config (dict): Transcription settings (language, model, device)
-            progress_callback (callable): Callback function for progress updates
-            completion_callback (callable): Callback function for transcription completion
-            error_callback (callable): Callback function for errors
+            progress_callback (callable): called as (percent:int, status:str)
+            completion_callback (callable): called as (text:str)
+            error_callback (callable): called as (message:str)
         """
         if self.is_transcribing:
             if error_callback:
                 error_callback("A transcription is already in progress.")
             return
-        
+
         self.is_transcribing = True
         self.cancel_requested = False
         self.start_time = time.time()
-        self.estimated_total_time = 0
-        
-        # Start transcription thread
+
         self.transcription_thread = threading.Thread(
             target=self._transcribe_thread,
             args=(file_path, config, progress_callback, completion_callback, error_callback)
         )
         self.transcription_thread.daemon = True
         self.transcription_thread.start()
-    
-    def _transcribe_thread(self, file_path, config, progress_callback, completion_callback, error_callback):
+
+    def _load_model(self, model_name, device):
         """
-        Transcription thread.
-        
-        Args:
-            file_path (str): Path to the audio file
-            config (dict): Transcription settings (language, model, device)
-            progress_callback (callable): Callback function for progress updates
-            completion_callback (callable): Callback function for transcription completion
-            error_callback (callable): Callback function for errors
+        Loads (and caches) a WhisperModel. On CPU we use int8 for speed and
+        low memory; on CUDA we use float16. Falls back to CPU if a CUDA load
+        fails (e.g. no NVIDIA runtime present).
         """
+        resolved = _MODEL_ALIASES.get(model_name, model_name)
+
+        if self.model is not None and self.current_model_name == model_name and self.current_device == device:
+            return  # already loaded
+
+        def _build(dev):
+            compute_type = "float16" if dev == "cuda" else "int8"
+            return WhisperModel(resolved, device=dev, compute_type=compute_type)
+
         try:
-            # Check if file exists
+            self.model = _build(device)
+            self.current_device = device
+        except Exception:
+            # CUDA requested but unavailable -> fall back to CPU int8.
+            self.model = _build("cpu")
+            self.current_device = "cpu"
+
+        self.current_model_name = model_name
+
+    def _transcribe_thread(self, file_path, config, progress_callback, completion_callback, error_callback):
+        try:
             if not os.path.isfile(file_path):
                 if error_callback:
                     error_callback(f"File not found: {file_path}")
                 return
-            
-            # Extract settings
+
             model_name = config.get("model", "base")
             language = config.get("language", "auto")
-            device = config.get("device", "cuda" if torch.cuda.is_available() else "cpu")
-            
-            # Check GPU availability
-            if device == "cuda" and not torch.cuda.is_available():
-                if progress_callback:
-                    progress_callback(0, "GPU not available, using CPU")
-                device = "cpu"
-            
-            # Load model if necessary
+            device = config.get("device", "cpu")
+
             if progress_callback:
-                progress_callback(10, f"Loading model {model_name}...")
-            
-            # Load new model only if it's different from the current one
-            if self.model is None or self.current_model_name != model_name:
-                self.model = whisper.load_model(model_name, device=device)
-                self.current_model_name = model_name
-            
+                progress_callback(5, f"Loading model '{model_name}'...")
+
+            self._load_model(model_name, device)
+
             if self.cancel_requested:
                 return
-            
-            # Configure transcription options
-            transcribe_options = {}
-            
-            # Set language if not auto
-            if language != "auto":
-                transcribe_options["language"] = language
-            
-            # Configure fp16 based on device
-            transcribe_options["fp16"] = (device == "cuda")
-            
-            # Estimate total time based on file size and model
-            file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
-            
-            # Time estimation factors per model (seconds per MB)
-            time_factors = {
-                "tiny": 1.0,
-                "base": 2.0,
-                "small": 4.0,
-                "medium": 8.0,
-                "large": 16.0
+
+            options = {
+                "beam_size": 5,
+                "vad_filter": True,  # skip silence -> faster + cleaner output
             }
-            
-            # Adjust factor based on device
-            device_factor = 1.0 if device == "cuda" else 3.0
-            
-            # Calculate time estimate
-            self.estimated_total_time = file_size_mb * time_factors.get(model_name, 2.0) * device_factor
-            
+            if language != "auto":
+                options["language"] = language
+
             if progress_callback:
-                elapsed_time = time.time() - self.start_time
-                remaining_time = max(0, self.estimated_total_time - elapsed_time)
-                progress_callback(30, f"Starting transcription... Estimated time: {format_time(self.estimated_total_time)}")
-            
-            # Perform transcription
-            result = self.model.transcribe(file_path, **transcribe_options)
-            
+                progress_callback(10, "Analyzing audio...")
+
+            # segments is a lazy generator; work happens as we iterate it.
+            segments, info = self.model.transcribe(file_path, **options)
+            duration = info.duration or 0
+
+            text_parts = []
+            for segment in segments:
+                if self.cancel_requested:
+                    return
+                text_parts.append(segment.text)
+
+                if progress_callback:
+                    if duration > 0:
+                        # Map audio position to the 10%..95% band.
+                        pct = 10 + int((segment.end / duration) * 85)
+                        pct = min(95, max(10, pct))
+                        progress_callback(
+                            pct,
+                            f"Transcribing... {format_time(segment.end)} / {format_time(duration)}"
+                        )
+                    else:
+                        progress_callback(50, "Transcribing...")
+
             if self.cancel_requested:
                 return
-            
+
+            transcribed_text = "".join(text_parts).strip()
+
             if progress_callback:
-                elapsed_time = time.time() - self.start_time
-                progress_callback(90, f"Finalizing transcription... Elapsed time: {format_time(elapsed_time)}")
-            
-            # Extract text
-            transcribed_text = result.get("text", "")
-            
-            # Calculate total time
-            total_time = time.time() - self.start_time
-            
+                elapsed = time.time() - self.start_time
+                progress_callback(100, f"Completed in {format_time(elapsed)}")
+
             if completion_callback:
                 completion_callback(transcribed_text)
-        
+
         except Exception as e:
             if error_callback:
                 error_callback(f"Transcription error: {str(e)}")
-        
+
         finally:
             self.is_transcribing = False
-    
+
     def cancel(self):
         """
-        Cancels the ongoing transcription.
+        Requests cancellation of the ongoing transcription.
         """
         if self.is_transcribing:
             self.cancel_requested = True
             return True
         return False
 
+
 def format_time(seconds):
     """
-    Formats time in seconds to a readable string.
-    
-    Args:
-        seconds (float): Time in seconds
-        
-    Returns:
-        str: Formatted time
+    Formats a duration in seconds as a short human-readable string.
     """
     minutes, seconds = divmod(int(seconds), 60)
     hours, minutes = divmod(minutes, 60)
-    
+
     if hours > 0:
         return f"{hours}h {minutes}min {seconds}s"
     elif minutes > 0:
@@ -180,3 +175,14 @@ def format_time(seconds):
         return f"{seconds}s"
 
 
+if __name__ == "__main__":
+    # ponytail: smallest runnable check — timestamp->percent math must stay in band.
+    def pct_for(end, duration):
+        return min(95, max(10, 10 + int((end / duration) * 85)))
+    assert pct_for(0, 100) == 10
+    assert pct_for(100, 100) == 95
+    assert pct_for(50, 100) == 52
+    assert format_time(0) == "0s"
+    assert format_time(65) == "1min 5s"
+    assert format_time(3661) == "1h 1min 1s"
+    print("transcriber self-check OK")

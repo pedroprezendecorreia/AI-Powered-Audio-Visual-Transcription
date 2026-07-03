@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 from PySide6.QtWidgets import QApplication, QMessageBox
-from PySide6.QtCore import QObject, Signal, Slot, QThreadPool
+from PySide6.QtCore import QObject, Signal, Slot, QThreadPool, Qt
 
 from ui.main_window import MainWindow
 from ui.media_input import MediaInput
@@ -43,9 +43,12 @@ class ApplicationController(QObject):
         self.current_config = {
             'language': 'auto',
             'model': 'base',
-            'device': 'cuda'
+            'device': 'cpu'
         }
         
+        # When True, batch items are saved and advanced without prompting.
+        self.auto_continue = False
+
         # Thread pool for background operations
         self.thread_pool = QThreadPool()
         
@@ -255,10 +258,13 @@ class ApplicationController(QObject):
         """
         if not items:
             return
-        
+
+        # Read the auto-save choice made before the batch started.
+        self.auto_continue = self.batch_list.is_auto_continue()
+
         self.processing_started.emit()
         self.update_status.emit(f"Starting batch processing: {len(items)} items")
-        
+
         # Start batch processing
         self.batch_processor.process_batch(items, self.current_config)
     
@@ -340,19 +346,29 @@ class ApplicationController(QObject):
         """
         # Show the transcribed text
         self.update_text_view.emit(text)
-        
+
+        # Auto mode: save and advance without prompting.
+        if self.auto_continue:
+            self.batch_processor.confirm_and_continue(True, file_path, text)
+            return
+
         # Show confirmation dialog
         file_name = os.path.basename(file_path)
         msg_box = QMessageBox(self.main_window)
         msg_box.setWindowTitle("Transcription Confirmation")
         msg_box.setText(f"Transcription for file '{file_name}' completed.")
         msg_box.setInformativeText("Do you want to save this transcription and continue to the next item?")
-        
+
         # Buttons in English
         btn_save_continue = msg_box.addButton("Save and Continue", QMessageBox.YesRole)
         btn_save_stop = msg_box.addButton("Save and Stop", QMessageBox.NoRole)
         btn_cancel = msg_box.addButton("Cancel", QMessageBox.RejectRole)
-        
+
+        # Size each button to fit its label (the global stylesheet's min-width
+        # would otherwise clip longer text like "Save and Continue").
+        for btn in (btn_save_continue, btn_save_stop, btn_cancel):
+            btn.setMinimumWidth(btn.fontMetrics().horizontalAdvance(btn.text()) + 44)
+
         msg_box.setDefaultButton(btn_save_continue)
         
         # Add file details
@@ -398,19 +414,35 @@ def main():
     """
     Main function of the application.
     """
+    # Handle fractional display scaling (125%, 150%, ...) crisply.
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+    )
+
     # Create Qt application
     app = QApplication(sys.argv)
-    
+
     # Create main window
     main_window = MainWindow()
-    
+
     # Create controller
     controller = ApplicationController()
     controller.setup_main_window(main_window)
-    
+
+    # Size the window to the user's screen: ~72% wide, ~82% tall, centered,
+    # clamped so it never exceeds the available desktop area.
+    screen = app.primaryScreen().availableGeometry()
+    width = max(main_window.minimumWidth(), min(int(screen.width() * 0.72), screen.width()))
+    height = max(main_window.minimumHeight(), min(int(screen.height() * 0.82), screen.height()))
+    main_window.resize(width, height)
+    main_window.move(
+        screen.x() + (screen.width() - width) // 2,
+        screen.y() + (screen.height() - height) // 2,
+    )
+
     # Show window
     main_window.show()
-    
+
     # Execute event loop
     sys.exit(app.exec())
 

@@ -46,9 +46,12 @@ class TranscriptionConfig(QWidget):
         """
         language_group = QGroupBox("Language")
         language_layout = QVBoxLayout(language_group)
-        
+        language_layout.setContentsMargins(6, 10, 6, 6)
+        language_layout.setSpacing(10)
+
         # Description
         language_desc = QLabel("Select the audio language or choose automatic detection:")
+        language_desc.setWordWrap(True)
         language_layout.addWidget(language_desc)
         
         # Language combobox
@@ -77,9 +80,12 @@ class TranscriptionConfig(QWidget):
         """
         model_group = QGroupBox("Model")
         model_layout = QVBoxLayout(model_group)
-        
+        model_layout.setContentsMargins(6, 10, 6, 6)
+        model_layout.setSpacing(10)
+
         # Description
         model_desc = QLabel("Select the Whisper model to be used:")
+        model_desc.setWordWrap(True)
         model_layout.addWidget(model_desc)
         
         # Model combobox
@@ -105,9 +111,12 @@ class TranscriptionConfig(QWidget):
         """
         device_group = QGroupBox("Processing Device")
         device_layout = QVBoxLayout(device_group)
-        
+        device_layout.setContentsMargins(6, 10, 6, 6)
+        device_layout.setSpacing(10)
+
         # Description
-        device_desc = QLabel("Select the device for processing:")
+        device_desc = QLabel("Select the device for processing (GPU requires an NVIDIA card):")
+        device_desc.setWordWrap(True)
         device_layout.addWidget(device_desc)
         
         # Device options
@@ -115,14 +124,14 @@ class TranscriptionConfig(QWidget):
         
         device_layout_h = QHBoxLayout()
         
-        self.cuda_radio = QRadioButton("GPU (CUDA)")
-        self.cuda_radio.setChecked(True)  # GPU as default
-        self.device_button_group.addButton(self.cuda_radio)
-        device_layout_h.addWidget(self.cuda_radio)
-        
         self.cpu_radio = QRadioButton("CPU")
+        self.cpu_radio.setChecked(True)  # CPU as default (works everywhere)
         self.device_button_group.addButton(self.cpu_radio)
         device_layout_h.addWidget(self.cpu_radio)
+
+        self.cuda_radio = QRadioButton("GPU (NVIDIA CUDA)")
+        self.device_button_group.addButton(self.cuda_radio)
+        device_layout_h.addWidget(self.cuda_radio)
         
         device_layout.addLayout(device_layout_h)
         

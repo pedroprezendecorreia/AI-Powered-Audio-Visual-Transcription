@@ -1,8 +1,10 @@
 """
 Main interface component for the transcription application.
 """
+import os
+
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTabWidget, QSplitter, QLabel, QStatusBar
 )
 from PySide6.QtCore import Qt, QSize
@@ -43,10 +45,10 @@ class MainWindow(QMainWindow):
         """
         Loads the dark blue theme stylesheet.
         """
+        qss_path = os.path.join(os.path.dirname(__file__), "resources", "style.qss")
         try:
-            with open("ui/resources/style.qss", "r") as f:
-                style = f.read()
-                self.setStyleSheet(style)
+            with open(qss_path, "r", encoding="utf-8") as f:
+                self.setStyleSheet(f.read())
         except Exception as e:
             print(f"Error loading stylesheet: {e}")
     
@@ -54,14 +56,24 @@ class MainWindow(QMainWindow):
         """
         Sets up the user interface components.
         """
-        # Application title
+        # Application header (title + subtitle) styled via #headerBar in the QSS
+        header = QWidget()
+        header.setObjectName("headerBar")
+        header_layout = QVBoxLayout(header)
+        header_layout.setContentsMargins(18, 14, 18, 14)
+        header_layout.setSpacing(2)
+
         title_label = QLabel("Whisper Transcriber")
-        title_label.setAlignment(Qt.AlignCenter)
-        title_font = QFont()
-        title_font.setPointSize(16)
-        title_font.setBold(True)
-        title_label.setFont(title_font)
-        self.main_layout.addWidget(title_label)
+        title_label.setObjectName("appTitle")
+        title_label.setAlignment(Qt.AlignLeft)
+        header_layout.addWidget(title_label)
+
+        subtitle_label = QLabel("Fast local audio & video transcription")
+        subtitle_label.setObjectName("appSubtitle")
+        subtitle_label.setAlignment(Qt.AlignLeft)
+        header_layout.addWidget(subtitle_label)
+
+        self.main_layout.addWidget(header)
         
         # Main splitter
         self.main_splitter = QSplitter(Qt.Vertical)
